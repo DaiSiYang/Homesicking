@@ -77,13 +77,13 @@
 
         <el-form-item label="设施服务" prop="amenities">
           <el-checkbox-group v-model="form.amenities">
-            <el-checkbox label="wifi">免费WiFi</el-checkbox>
-            <el-checkbox label="parking">免费停车</el-checkbox>
-            <el-checkbox label="breakfast">含早餐</el-checkbox>
-            <el-checkbox label="air_condition">空调</el-checkbox>
-            <el-checkbox label="tv">电视</el-checkbox>
-            <el-checkbox label="washer">洗衣机</el-checkbox>
-            <el-checkbox label="kitchen">厨房</el-checkbox>
+            <el-checkbox value="wifi" label="免费WiFi">免费WiFi</el-checkbox>
+            <el-checkbox value="parking" label="免费停车">免费停车</el-checkbox>
+            <el-checkbox value="breakfast" label="含早餐">含早餐</el-checkbox>
+            <el-checkbox value="air_condition" label="空调">空调</el-checkbox>
+            <el-checkbox value="tv" label="电视">电视</el-checkbox>
+            <el-checkbox value="washer" label="洗衣机">洗衣机</el-checkbox>
+            <el-checkbox value="kitchen" label="厨房">厨房</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
 

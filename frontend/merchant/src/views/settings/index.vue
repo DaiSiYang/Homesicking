@@ -159,9 +159,9 @@
 
             <el-form-item label="通知方式">
               <el-checkbox-group v-model="notificationForm.methods">
-                <el-checkbox label="app">APP推送</el-checkbox>
-                <el-checkbox label="sms">短信</el-checkbox>
-                <el-checkbox label="email">邮件</el-checkbox>
+                <el-checkbox value="app" label="APP推送">APP推送</el-checkbox>
+                <el-checkbox value="sms" label="短信">短信</el-checkbox>
+                <el-checkbox value="email" label="邮件">邮件</el-checkbox>
               </el-checkbox-group>
             </el-form-item>
 
