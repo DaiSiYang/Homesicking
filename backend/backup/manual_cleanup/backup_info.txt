@@ -1,0 +1,16 @@
+备份时间: 2024-12-19 11:19:00
+备份原因: 多端API架构重构后的冗余文件清理
+
+备份的文件列表:
+1. apps/users/views/auth_views.py -> auth_views_backup.py
+2. apps/users/urls/auth_urls.py -> auth_urls_backup.py
+3. apps/users/urls/merchant_manage_urls.py -> merchant_manage_urls_backup.py
+4. apps/users/urls/merchant_urls.py -> merchant_urls_backup.py
+
+清理说明:
+- 旧版认证功能已被新的多端API认证系统替代
+- 商户管理功能应移到对应的merchant端和admin端
+- 这些文件在新架构中已不再需要
+
+恢复方法:
+如需恢复，可以将backup文件复制回原位置并重命名
