@@ -75,26 +75,28 @@
     
     <!-- 图表区域 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- 订单统计图表 -->
       <el-card shadow="hover">
         <template #header>
           <div class="flex justify-between items-center">
             <span>订单统计</span>
             <el-radio-group v-model="orderChartType" size="small">
-              <el-radio-button label="week">本周</el-radio-button>
-              <el-radio-button label="month">本月</el-radio-button>
+              <el-radio-button value="week">本周</el-radio-button>
+              <el-radio-button value="month">本月</el-radio-button>
             </el-radio-group>
           </div>
         </template>
         <div class="h-80" ref="orderChartRef"></div>
       </el-card>
       
+      <!-- 收入统计图表 -->
       <el-card shadow="hover">
         <template #header>
           <div class="flex justify-between items-center">
             <span>收入统计</span>
             <el-radio-group v-model="incomeChartType" size="small">
-              <el-radio-button label="week">本周</el-radio-button>
-              <el-radio-button label="month">本月</el-radio-button>
+              <el-radio-button value="week">本周</el-radio-button>
+              <el-radio-button value="month">本月</el-radio-button>
             </el-radio-group>
           </div>
         </template>
@@ -158,273 +160,122 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch, onUnmounted } from 'vue'
-import * as echarts from 'echarts/core'
-import { LineChart, BarChart } from 'echarts/charts'
-import {
-  TitleComponent,
-  TooltipComponent,
-  GridComponent,
-  LegendComponent
-} from 'echarts/components'
-import { CanvasRenderer } from 'echarts/renderers'
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { getDashboardStats, getRecentActivities, getTodoList } from '@/api/dashboard'
 
-// 注册必要的组件
-echarts.use([
-  TitleComponent,
-  TooltipComponent,
-  GridComponent,
-  LegendComponent,
-  LineChart,
-  BarChart,
-  CanvasRenderer
-])
+// 最近活动数据 - 确保始终是数组
+// 删除第190-202行的重复声明
+// const recentActivities = ref([
+//   {
+//     time: '2024-01-15 10:30',
+//     type: 'primary',
+//     content: '新用户注册：张三'
+//   },
+//   // ... 其他示例数据
+// ])
 
-// 图表引用
-const orderChartRef = ref(null)
-const incomeChartRef = ref(null)
-let orderChart = null
-let incomeChart = null
+// 待办事项 - 确保始终是数组
+const todos = ref([])
 
-// 图表类型
+// 统计数据 - 提供默认值
+const stats = ref({
+  userCount: 0,
+  userGrowth: 0,
+  merchantCount: 0,
+  merchantGrowth: 0,
+  productCount: 0,
+  productGrowth: 0,
+  homestayCount: 0,
+  homestayGrowth: 0
+})
+
+// 图表类型控制
 const orderChartType = ref('week')
 const incomeChartType = ref('week')
 
-// 统计数据
-const stats = reactive({
-  userCount: 1568,
-  userGrowth: 12.5,
-  merchantCount: 245,
-  merchantGrowth: 8.3,
-  productCount: 1254,
-  productGrowth: 15.2,
-  homestayCount: 386,
-  homestayGrowth: 10.8
-})
+// 待办事项
 
-// 最近活动
-const recentActivities = ref([
-  {
-    content: '新商户"山水间农家乐"已通过审核',
-    time: '2023-11-20 14:32:25',
-    type: 'success'
-  },
-  {
-    content: '用户"张三"提交了商户入驻申请',
-    time: '2023-11-20 10:15:36',
-    type: 'primary'
-  },
-  {
-    content: '新增特产"葫芦峪蜂蜜"需要审核',
-    time: '2023-11-19 16:45:12',
-    type: 'warning'
-  },
-  {
-    content: '用户"李四"投诉订单DD20230001',
-    time: '2023-11-19 09:22:18',
-    type: 'danger'
-  },
-  {
-    content: '系统更新完成，版本号v1.2.5',
-    time: '2023-11-18 22:30:00',
-    type: 'info'
-  }
-])
 
-// 待处理事项
-const todos = ref([
-  {
-    title: '商户入驻申请审核',
-    type: '商户管理',
-    status: '待处理',
-    time: '2023-11-20 10:15:36'
-  },
-  {
-    title: '特产上架审核',
-    type: '特产管理',
-    status: '待处理',
-    time: '2023-11-19 16:45:12'
-  },
-  {
-    title: '用户投诉处理',
-    type: '订单管理',
-    status: '待处理',
-    time: '2023-11-19 09:22:18'
-  },
-  {
-    title: '系统安全更新',
-    type: '系统管理',
-    status: '进行中',
-    time: '2023-11-18 22:30:00'
-  }
-])
+const loading = ref(false)
+const orderChartRef = ref()
+const incomeChartRef = ref()
 
 // 获取待办事项类型颜色
 const getTodoTypeColor = (type) => {
-  const colors = {
-    '商户管理': 'success',
-    '特产管理': 'warning',
-    '订单管理': 'danger',
-    '系统管理': 'info'
+  const colorMap = {
+    '审核': 'warning',
+    '客服': 'info',
+    '系统': 'danger',
+    '运营': 'success'
   }
-  return colors[type] || 'primary'
+  return colorMap[type] || 'info'
 }
 
-// 初始化订单图表
-const initOrderChart = () => {
-  if (!orderChartRef.value) return
-  
-  orderChart = echarts.init(orderChartRef.value)
-  
-  const option = {
-    title: {
-      text: '订单统计'
-    },
-    tooltip: {
-      trigger: 'axis'
-    },
-    legend: {
-      data: ['特产订单', '民宿订单', '总订单']
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: orderChartType.value === 'week'
-        ? ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-        : Array.from({ length: 30 }, (_, i) => `${i + 1}日`)
-    },
-    yAxis: {
-      type: 'value'
-    },
-    series: [
-      {
-        name: '特产订单',
-        type: 'line',
-        stack: '总量',
-        data: orderChartType.value === 'week'
-          ? [12, 13, 10, 16, 19, 23, 21]
-          : Array.from({ length: 30 }, () => Math.floor(Math.random() * 20 + 10))
-      },
-      {
-        name: '民宿订单',
-        type: 'line',
-        stack: '总量',
-        data: orderChartType.value === 'week'
-          ? [8, 9, 11, 13, 12, 17, 15]
-          : Array.from({ length: 30 }, () => Math.floor(Math.random() * 15 + 5))
-      },
-      {
-        name: '总订单',
-        type: 'line',
-        data: orderChartType.value === 'week'
-          ? [20, 22, 21, 29, 31, 40, 36]
-          : Array.from({ length: 30 }, () => Math.floor(Math.random() * 35 + 15))
-      }
-    ]
+// 获取统计数据
+const fetchStats = async () => {
+  try {
+    const response = await getDashboardStats()
+    if (response.data) {
+      stats.value = response.data
+    }
+  } catch (error) {
+    console.error('获取统计数据失败:', error)
+    ElMessage.error('获取统计数据失败，请稍后重试')
   }
-  
-  orderChart.setOption(option)
 }
 
-// 初始化收入图表
-const initIncomeChart = () => {
-  if (!incomeChartRef.value) return
-  
-  incomeChart = echarts.init(incomeChartRef.value)
-  
-  const option = {
-    title: {
-      text: '收入统计'
-    },
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'shadow'
-      }
-    },
-    legend: {
-      data: ['特产收入', '民宿收入', '总收入']
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'category',
-      data: incomeChartType.value === 'week'
-        ? ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-        : Array.from({ length: 30 }, (_, i) => `${i + 1}日`)
-    },
-    yAxis: {
-      type: 'value'
-    },
-    series: [
-      {
-        name: '特产收入',
-        type: 'bar',
-        data: incomeChartType.value === 'week'
-          ? [2200, 1800, 2100, 2400, 3000, 3500, 3100]
-          : Array.from({ length: 30 }, () => Math.floor(Math.random() * 2000 + 1500))
-      },
-      {
-        name: '民宿收入',
-        type: 'bar',
-        data: incomeChartType.value === 'week'
-          ? [3000, 2800, 3200, 3800, 3500, 4200, 4000]
-          : Array.from({ length: 30 }, () => Math.floor(Math.random() * 2500 + 2000))
-      },
-      {
-        name: '总收入',
-        type: 'line',
-        data: incomeChartType.value === 'week'
-          ? [5200, 4600, 5300, 6200, 6500, 7700, 7100]
-          : Array.from({ length: 30 }, () => Math.floor(Math.random() * 4500 + 3500))
-      }
-    ]
+// 获取最近活动
+const fetchActivities = async () => {
+  try {
+    const response = await getRecentActivities({ limit: 10 })
+    // 确保数据结构正确
+    if (response.data && response.data.results) {
+      recentActivities.value = response.data.results
+    } else {
+      console.warn('获取最近活动数据格式异常:', response.data)
+      recentActivities.value = []
+    }
+  } catch (error) {
+    console.error('获取最近活动失败:', error)
+    // 设置默认值防止组件错误
+    recentActivities.value = []
+    ElMessage.error('获取最近活动失败，请稍后重试')
   }
-  
-  incomeChart.setOption(option)
 }
 
-// 监听图表类型变化
-watch(orderChartType, () => {
-  initOrderChart()
-})
+// 获取待办事项
+const fetchTodos = async () => {
+  try {
+    const response = await getTodoList()
+    if (response.data) {
+      todos.value = response.data
+    } else {
+      todos.value = []
+    }
+  } catch (error) {
+    console.error('获取待办事项失败:', error)
+    todos.value = []
+    ElMessage.error('获取待办事项失败，请稍后重试')
+  }
+}
 
-watch(incomeChartType, () => {
-  initIncomeChart()
-})
-
-// 窗口大小改变时重新调整图表大小
-const handleResize = () => {
-  orderChart?.resize()
-  incomeChart?.resize()
+// 初始化数据
+const initData = async () => {
+  loading.value = true
+  try {
+    await Promise.all([
+      fetchStats(),
+      fetchActivities(),
+      fetchTodos()
+    ])
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
-  // 初始化图表
-  initOrderChart()
-  initIncomeChart()
-  
-  // 监听窗口大小变化
-  window.addEventListener('resize', handleResize)
-})
-
-onUnmounted(() => {
-  // 移除事件监听
-  window.removeEventListener('resize', handleResize)
-  
-  // 销毁图表实例
-  orderChart?.dispose()
-  incomeChart?.dispose()
+  initData()
 })
 </script>
 
@@ -440,4 +291,4 @@ onUnmounted(() => {
 .dashboard-card:hover {
   transform: translateY(-5px);
 }
-</style> 
+</style>

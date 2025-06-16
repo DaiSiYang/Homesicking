@@ -71,24 +71,24 @@
       </div>
 
       <!-- 美食详情信息 -->
-      <el-tabs class="mb-8">
+      <el-tabs class="mb-8" v-if="food">
         <el-tab-pane label="美食介绍">
           <div class="food-description mb-6">
             <h2 class="text-xl font-bold mb-4">详细介绍</h2>
             <div class="text-gray-700 leading-relaxed whitespace-pre-line">
-              {{ food.description }}
+              {{ food.description || '暂无介绍' }}
             </div>
           </div>
           
           <div class="food-making">
             <h2 class="text-xl font-bold mb-4">制作工艺</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div v-for="(step, index) in food.makingProcess" :key="index" class="making-step">
+              <div v-for="(step, index) in (food.makingProcess || [])" :key="index" class="making-step">
                 <div class="step-number bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center mb-2">
                   {{ index + 1 }}
                 </div>
-                <h3 class="font-bold mb-1">{{ step.title }}</h3>
-                <p class="text-gray-600 text-sm">{{ step.description }}</p>
+                <h3 class="font-bold mb-1">{{ step.title || '步骤' + (index + 1) }}</h3>
+                <p class="text-gray-600 text-sm">{{ step.description || '制作步骤描述' }}</p>
               </div>
             </div>
           </div>
@@ -96,9 +96,9 @@
           <div class="food-ingredients">
             <h2 class="text-xl font-bold mb-4">主要食材</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div v-for="(ingredient, index) in food.ingredients" :key="index" class="ingredient-item p-3 border border-gray-200 rounded-lg text-center">
-                <p class="font-bold">{{ ingredient.name }}</p>
-                <p class="text-gray-500 text-sm">{{ ingredient.description }}</p>
+              <div v-for="(ingredient, index) in (food.ingredients || [])" :key="index" class="ingredient-item p-3 border border-gray-200 rounded-lg text-center">
+                <p class="font-bold">{{ ingredient.name || '未知食材' }}</p>
+                <p class="text-gray-500 text-sm">{{ ingredient.description || '新鲜食材' }}</p>
               </div>
             </div>
           </div>
@@ -107,7 +107,7 @@
         <el-tab-pane label="营养价值">
           <div class="nutrition-info">
             <h2 class="text-xl font-bold mb-4">营养成分表</h2>
-            <el-table :data="food.nutritionFacts" stripe class="mb-6">
+            <el-table :data="food.nutritionFacts || []" stripe class="mb-6">
               <el-table-column prop="name" label="营养素" width="180" />
               <el-table-column prop="value" label="含量" />
               <el-table-column prop="dailyValue" label="每日参考值%" />
@@ -115,7 +115,7 @@
             
             <div class="nutrition-description">
               <h3 class="font-bold mb-2">营养特点</h3>
-              <p class="text-gray-700">{{ food.nutritionDescription }}</p>
+              <p class="text-gray-700">{{ food.nutritionDescription || '营养丰富，口感独特' }}</p>
             </div>
           </div>
         </el-tab-pane>
@@ -124,7 +124,7 @@
           <div class="reviews">
             <div class="review-summary flex items-center mb-6">
               <div class="rating-info mr-8">
-                <p class="text-3xl font-bold text-orange-500">{{ food.rating }}</p>
+                <p class="text-3xl font-bold text-orange-500">{{ food.rating || 0 }}</p>
                 <p class="text-sm text-gray-500">综合评分</p>
               </div>
               <div class="rating-distribution flex-grow">
@@ -141,12 +141,12 @@
               </div>
             </div>
             
-            <div v-if="food.reviews.length === 0" class="text-center py-4">
+            <div v-if="(food.reviews || []).length === 0" class="text-center py-4">
               <el-empty description="暂无点评" />
             </div>
             <div v-else class="review-list">
               <div 
-                v-for="(review, index) in food.reviews" 
+                v-for="(review, index) in (food.reviews || [])"
                 :key="index"
                 class="review-item border-b border-gray-200 py-4 last:border-none"
               >
@@ -295,6 +295,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Star, Plus } from '@element-plus/icons-vue'
+import { getFoodDetail } from '@/api/foods'
 
 const route = useRoute()
 const loading = ref(true)
@@ -331,157 +332,70 @@ const fetchFoodDetail = async () => {
 
   try {
     const foodId = route.params.id
-    // 模拟API调用，实际项目中应替换为真实API
-    setTimeout(() => {
-      // 模拟数据
+    const res = await getFoodDetail(foodId)
+    
+    if (res.code === 200) {
+      const rawData = res.data
+      
+      // 添加更严格的数据验证
+      let ingredients = []
+      try {
+        if (rawData.ingredients && typeof rawData.ingredients === 'string') {
+          const parsed = JSON.parse(rawData.ingredients)
+          ingredients = Array.isArray(parsed) ? parsed.map(name => ({ 
+            name: name || '未知食材', 
+            description: '' 
+          })) : []
+        }
+      } catch (e) {
+        console.warn('解析ingredients失败:', e)
+        ingredients = []
+      }
+      
       food.value = {
-        id: foodId,
-        name: '徽州毛豆腐',
-        category: '特色小吃',
-        region: '华东-安徽',
-        price: 38,
-        rating: 4.7,
-        reviewCount: 328,
-        description: '徽州毛豆腐是安徽徽州地区的传统名菜，历史悠久，距今已有上千年历史。\n\n徽州毛豆腐选用优质黄豆，经过浸泡、磨浆、点卤、压制成型等工序制成豆腐坯，然后经过特殊的发酵技术，在豆腐表面形成一层白色绒毛，因此得名"毛豆腐"。\n\n毛豆腐经过煎、炸等烹饪方式烹制，外皮金黄酥脆，内部绵软，入口鲜香，带有独特的发酵风味，是徽州一带非常受欢迎的传统小吃。',
-        recommendedRestaurant: '徽州人家',
-        address: '安徽省黄山市黟县宏村风景区东门50米',
+        id: rawData.id || 0,
+        name: rawData.name || '未知美食',
+        images: rawData.gallery && Array.isArray(rawData.gallery) && rawData.gallery.length > 0 
+          ? rawData.gallery.map(item => item.image_url || '').filter(Boolean)
+          : [rawData.cover_image || '/default-food.jpg'],
+        price: rawData.current_price || rawData.price || 0,
+        rating: parseFloat(rawData.rating) || 0,
+        reviewCount: rawData.views || 0,
+        category: rawData.category_name || '特色美食',
+        region: rawData.village_name || '未知地区',
+        description: rawData.description || '暂无介绍',
+        ingredients: ingredients,
+        recommendedRestaurant: rawData.merchant_name || '暂无推荐餐厅',
+        address: rawData.village_name || '地址待更新',
         businessHours: '09:00-21:00',
-        images: [
-          'https://picsum.photos/id/1080/800/600',
-          'https://picsum.photos/id/1081/800/600',
-          'https://picsum.photos/id/1082/800/600',
-          'https://picsum.photos/id/1083/800/600'
-        ],
-        tags: ['发酵食品', '素食', '传统工艺', '地方特色', '徽州名菜'],
+        tags: rawData.category_name ? [rawData.category_name] : ['特色美食'],
         makingProcess: [
           {
-            title: '选料',
-            description: '选用优质黄豆，浸泡8小时后磨浆'
+            title: '食材准备',
+            description: '精选优质食材'
           },
           {
-            title: '制坯',
-            description: '豆浆点卤成型，压制成豆腐坯'
+            title: '传统工艺',
+            description: rawData.intro || '采用传统制作工艺'
           },
           {
-            title: '发酵',
-            description: '在特定温湿度环境下发酵3-5天，表面长出白色绒毛'
-          },
-          {
-            title: '烹饪',
-            description: '切片后油煎或油炸至金黄酥脆即可食用'
+            title: '精心制作',
+            description: '匠心独运，精心制作'
           }
         ],
-        ingredients: [
-          {
-            name: '黄豆',
-            description: '优质黄豆，富含蛋白质'
-          },
-          {
-            name: '卤水',
-            description: '传统手工制作的点豆腐用卤水'
-          },
-          {
-            name: '食用油',
-            description: '菜籽油或花生油'
-          },
-          {
-            name: '配料',
-            description: '盐、姜、蒜、辣椒等调味料'
-          }
-        ],
-        nutritionFacts: [
-          {
-            name: '热量',
-            value: '230大卡',
-            dailyValue: '11.5%'
-          },
-          {
-            name: '蛋白质',
-            value: '15克',
-            dailyValue: '25%'
-          },
-          {
-            name: '脂肪',
-            value: '18克',
-            dailyValue: '27%'
-          },
-          {
-            name: '碳水化合物',
-            value: '8克',
-            dailyValue: '2.7%'
-          },
-          {
-            name: '钙',
-            value: '350毫克',
-            dailyValue: '35%'
-          }
-        ],
-        nutritionDescription: '毛豆腐富含优质植物蛋白和多种氨基酸，钙含量丰富，有助于补充人体所需的营养。发酵过程中产生的益生菌对肠道健康有益。但因经油炸烹饪，热量和脂肪含量较高，建议适量食用。',
-        reviews: [
-          {
-            user: {
-              name: '美食家小王',
-              avatar: 'https://picsum.photos/id/1005/100/100'
-            },
-            rating: 5,
-            date: '2023-10-15',
-            content: '正宗的徽州毛豆腐，外酥里嫩，发酵的香味非常独特，配上蒜泥和辣椒更是绝配！店家的做法很地道，和我小时候在徽州老家吃的味道一模一样。强烈推荐！',
-            images: ['https://picsum.photos/id/1086/300/300', 'https://picsum.photos/id/1087/300/300']
-          },
-          {
-            user: {
-              name: '旅行者老李',
-              avatar: 'https://picsum.photos/id/1012/100/100'
-            },
-            rating: 4,
-            date: '2023-09-28',
-            content: '第一次尝试毛豆腐，开始有点担心接受不了发酵的味道，没想到味道出乎意料的好！外层煎得酥脆，里面软嫩，有点像臭豆腐但是更加温和。店内环境也很有徽州特色。'
-          },
-          {
-            user: {
-              name: '素食主义者',
-              avatar: 'https://picsum.photos/id/1025/100/100'
-            },
-            rating: 5,
-            date: '2023-08-20',
-            content: '作为一个素食者，这道毛豆腐太符合我的口味了！蛋白质含量高，味道又好，尤其喜欢它独特的发酵风味。每次去徽州都必点这道菜。'
-          }
-        ],
-        relatedFoods: [
-          {
-            id: 6,
-            name: '客家酿豆腐',
-            price: 42,
-            rating: 4.7,
-            image: 'https://picsum.photos/id/1085/300/300'
-          },
-          {
-            id: 7,
-            name: '臭豆腐',
-            price: 28,
-            rating: 4.5,
-            image: 'https://picsum.photos/id/1088/300/300'
-          },
-          {
-            id: 8,
-            name: '徽州烧饼',
-            price: 15,
-            rating: 4.6,
-            image: 'https://picsum.photos/id/1089/300/300'
-          },
-          {
-            id: 9,
-            name: '徽州石头饼',
-            price: 18,
-            rating: 4.8,
-            image: 'https://picsum.photos/id/1090/300/300'
-          }
-        ]
+        // 添加缺失的字段
+        nutritionFacts: [],
+        nutritionDescription: '营养丰富，口感独特',
+        reviews: [],
+        relatedFoods: []
       }
-      loading.value = false
-    }, 1000)
+    } else {
+      ElMessage.error(res.message || '获取美食详情失败')
+    }
   } catch (error) {
+    console.error('获取美食详情失败:', error)
     ElMessage.error('获取美食详情失败')
+  } finally {
     loading.value = false
   }
 }
@@ -582,4 +496,4 @@ const submitReservation = () => {
 .bg-primary {
   background-color: #409EFF;
 }
-</style> 
+</style>

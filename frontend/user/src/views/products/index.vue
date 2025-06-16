@@ -52,7 +52,7 @@
       <div v-for="product in products" :key="product.id" class="product-card">
         <el-card class="h-full flex flex-col" shadow="hover" :body-style="{ padding: '0' }">
           <div class="relative">
-            <img :src="product.coverImage" alt="商品图片" class="w-full h-48 object-cover">
+            <img :src="product.cover_image || product.coverImage" alt="商品图片" class="w-full h-48 object-cover">
             <span v-if="product.isHot" class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">热卖</span>
             <span v-if="product.discount" class="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">{{ product.discount }}折</span>
           </div>
@@ -140,9 +140,12 @@ const fetchProducts = async () => {
     }
     
     const res = await getProductList(params)
+    console.log('产品列表API返回数据:', res) // 添加调试日志
+    
     if (res.code === 200) {
       products.value = res.data.results || []
       total.value = res.data.count || 0
+      console.log('产品数据:', products.value) // 添加调试日志
     } else {
       ElMessage.error(res.message || '获取产品数据失败')
     }
@@ -206,6 +209,11 @@ const handleCurrentChange = (val) => {
 
 // 查看详情
 const viewDetail = (id) => {
+  if (!id) {
+    ElMessage.error('商品ID无效')
+    return
+  }
+  console.log('跳转到商品详情:', id) // 添加调试日志
   router.push(`/products/${id}`)
 }
 </script>

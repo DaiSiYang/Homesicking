@@ -3,7 +3,7 @@ from django.utils import timezone
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
-from rest_framework.response import Response
+from rest_framework.response import Response # 确保导入 Response
 
 from apps.utils.response import ApiResponse
 from apps.utils.pagination import StandardResultsSetPagination
@@ -75,18 +75,11 @@ class HomestayListView(ListAPIView):
         return queryset.order_by(order_field)
     
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        
-        # 添加查询日期到上下文
-        context = {'today': request.query_params.get('date', timezone.now().date())}
-        
-        if page is not None:
-            serializer = self.get_serializer(page, many=True, context=context)
-            return self.get_paginated_response(serializer.data)
-        
-        serializer = self.get_serializer(queryset, many=True, context=context)
-        return ApiResponse(data=serializer.data)
+        response = super().list(request, *args, **kwargs)
+        print(f"--- Homestay List API Response ---")
+        print(response.data)
+        print(f"----------------------------------")
+        return response
 
 
 class HomestayDetailView(RetrieveAPIView):
@@ -98,20 +91,11 @@ class HomestayDetailView(RetrieveAPIView):
     permission_classes = [AllowAny]
     
     def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        
-        # 增加浏览量
-        Homestay.objects.filter(id=instance.id).update(views=F('views') + 1)
-        
-        # 添加查询日期范围到上下文
-        context = {
-            'today': request.query_params.get('date', timezone.now().date()),
-            'check_in': request.query_params.get('check_in'),
-            'check_out': request.query_params.get('check_out')
-        }
-        
-        serializer = self.get_serializer(instance, context=context)
-        return ApiResponse(data=serializer.data)
+        response = super().retrieve(request, *args, **kwargs)
+        print(f"--- Homestay Detail API Response (ID: {kwargs.get('pk')}) ---")
+        print(response.data)
+        print(f"--------------------------------------------------------")
+        return response
 
 
 class FeaturedHomestayView(APIView):
@@ -125,4 +109,4 @@ class FeaturedHomestayView(APIView):
         queryset = Homestay.objects.filter(status='approved', is_featured=True)[:5]
         serializer = HomestayListSerializer(queryset, many=True)
         
-        return ApiResponse(data=serializer.data) 
+        return ApiResponse(data=serializer.data)

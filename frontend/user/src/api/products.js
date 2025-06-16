@@ -26,9 +26,10 @@ export function getProductCategories() {
 }
 
 // 收藏/取消收藏产品
-export function toggleProductFavorite(id) {
+// 确保收藏接口正确
+export function toggleProductFavorite(productId) {
   return request({
-    url: `/products/${id}/favorite/`,
+    url: `/products/${productId}/favorite/`,
     method: 'post'
   })
 }

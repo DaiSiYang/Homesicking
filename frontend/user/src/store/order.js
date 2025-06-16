@@ -30,10 +30,19 @@ export const useOrderStore = defineStore('order', {
   },
   
   actions: {
-    // 获取订单列表
+    // 获取订单列表 - 支持sessionStorage
     async fetchOrders(params = {}) {
       this.loading = true
       try {
+        // 检查是否有待处理的订单
+        const pendingOrder = sessionStorage.getItem('pendingOrder')
+        if (pendingOrder) {
+          const orderData = JSON.parse(pendingOrder)
+          // 将待处理订单添加到订单列表
+          this.orders = [orderData, ...this.orders]
+        }
+        
+        // 然后调用API获取其他订单
         const queryParams = {
           page: this.currentPage,
           page_size: this.pageSize,
@@ -153,4 +162,4 @@ export const useOrderStore = defineStore('order', {
       this.pageSize = pageSize
     }
   }
-}) 
+})

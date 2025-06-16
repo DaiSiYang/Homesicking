@@ -45,9 +45,17 @@
           <template #default="scope">
             <el-image 
               style="width: 60px; height: 60px" 
-              :src="scope.row.image" 
+              :src="scope.row.cover_image" 
               fit="cover"
-            />
+              :preview-src-list="[scope.row.cover_image]"
+              preview-teleported
+            >
+              <template #error>
+                <div class="image-slot">
+                  <el-icon><Picture /></el-icon>
+                </div>
+              </template>
+            </el-image>
           </template>
         </el-table-column>
         <el-table-column prop="name" label="名称" min-width="150" />
@@ -59,7 +67,7 @@
         </el-table-column>
         <el-table-column prop="price" label="价格" width="100">
           <template #default="scope">
-            <span class="text-orange-500">¥{{ scope.row.price.toFixed(2) }}</span>
+            <span class="text-orange-500">¥{{ parseFloat(scope.row.price).toFixed(2) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="stock" label="库存" width="80" />
@@ -133,65 +141,81 @@ import { Search } from '@element-plus/icons-vue'
 const router = useRouter()
 
 // 数据
-const products = ref([
-  {
-    id: 1,
-    name: '葫芦峪蜂蜜',
-    image: 'https://via.placeholder.com/200x200',
-    merchant_id: 1,
-    merchant_name: '山水间农家乐',
-    category: 'food',
-    price: 128.00,
-    stock: 100,
-    status: 'active'
-  },
-  {
-    id: 2,
-    name: '手工竹编',
-    image: 'https://via.placeholder.com/200x200',
-    merchant_id: 1,
-    merchant_name: '山水间农家乐',
-    category: 'handicraft',
-    price: 99.00,
-    stock: 50,
-    status: 'active'
-  },
-  {
-    id: 3,
-    name: '有机蔬菜礼盒',
-    image: 'https://via.placeholder.com/200x200',
-    merchant_id: 2,
-    merchant_name: '青山绿水民宿',
-    category: 'agricultural',
-    price: 158.00,
-    stock: 30,
-    status: 'pending'
-  }
-])
-
+const products = ref([])  // 改为空数组
 const loading = ref(false)
 const searchQuery = ref('')
 const filterStatus = ref('')
 const filterCategory = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(3)
+const total = ref(0)  // 改为0，而不是硬编码的3
 
 // 获取特产列表
+// 导入API
+import {
+  getProductList,
+  updateProductStatus,
+  deleteProduct,
+  batchUpdateProducts
+} from '@/api/product'
+
+// 更新fetchProducts函数
 const fetchProducts = async () => {
   loading.value = true
   try {
-    // 模拟API请求
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // 实际项目中这里应该调用API获取数据
-    loading.value = false
+    const params = {
+      page: currentPage.value,
+      page_size: pageSize.value,
+      search: searchQuery.value,
+      status: filterStatus.value,
+      category: filterCategory.value
+    }
+    
+    const response = await getProductList(params)
+    console.log('API返回的完整数据:', response.data)
+    console.log('results数组长度:', response.data.results?.length)
+    console.log('count值:', response.data.count)
+    products.value = response.data.results
+    total.value = response.data.count
   } catch (error) {
-    console.error('获取特产列表失败:', error)
-    ElMessage.error('获取特产列表失败')
+    console.error('获取产品列表失败:', error)
+    ElMessage.error('获取产品列表失败')
+  } finally {
     loading.value = false
   }
 }
 
+// 更新产品状态
+const handleStatusChange = async (product, status) => {
+  try {
+    await updateProductStatus(product.id, status)
+    ElMessage.success('状态更新成功')
+    await fetchProducts()
+  } catch (error) {
+    console.error('更新产品状态失败:', error)
+    ElMessage.error('更新产品状态失败')
+  }
+}
+
+// 删除产品
+const handleDelete = async (product) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这个产品吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    await deleteProduct(product.id)
+    ElMessage.success('删除成功')
+    await fetchProducts()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除产品失败:', error)
+      ElMessage.error('删除产品失败')
+    }
+  }
+}
 // 查看特产详情
 const viewProductDetail = (product) => {
   router.push(`/products/${product.id}`)
@@ -268,4 +292,4 @@ fetchProducts()
 .products-container {
   padding: 20px;
 }
-</style> 
+</style>

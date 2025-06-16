@@ -40,13 +40,19 @@
       <div v-for="village in villages" :key="village.id" class="village-card">
         <el-card class="h-full flex flex-col" shadow="hover">
           <div class="village-image mb-4">
-            <img :src="village.coverImage" alt="村庄图片" class="w-full h-48 object-cover rounded">
+            <img 
+              :src="cleanImageUrl(village.cover_image)" 
+              alt="村庄图片" 
+              class="w-full h-48 object-cover rounded"
+              @error="handleImageError"
+              :onerror="`this.src='/src/assets/images/default-village.jpg'`"
+            >
           </div>
           <h3 class="text-xl font-bold mb-2">{{ village.name }}</h3>
-          <p class="text-gray-500 mb-2">{{ village.region }}</p>
-          <p class="text-sm text-gray-600 mb-4 flex-grow">{{ village.description }}</p>
+          <p class="text-gray-500 mb-2">{{ village.region_name }}</p>
+          <p class="text-sm text-gray-600 mb-4 flex-grow">{{ village.intro }}</p>
           <div class="flex justify-between items-center">
-            <el-rate v-model="village.rating" disabled text-color="#ff9900" />
+            <el-rate :model-value="parseFloat(village.rating)" disabled text-color="#ff9900" />
             <router-link :to="`/villages/${village.id}`">
               <el-button type="primary" size="small">查看详情</el-button>
             </router-link>
@@ -98,7 +104,13 @@ onMounted(() => {
 // 在script setup中添加API导入
 import { getVillageList } from '@/api/villages'
 
-// 修改fetchVillages函数
+// 在script setup中添加清理图片URL的函数
+const cleanImageUrl = (url) => {
+  if (!url) return ''
+  return url.replace(/[`\s]/g, '') // 移除反引号和空格
+}
+
+// 修改fetchVillages函数中的数据处理
 const fetchVillages = async () => {
   loading.value = true
   
@@ -112,7 +124,12 @@ const fetchVillages = async () => {
     
     const res = await getVillageList(params)
     if (res.code === 200) {
-      villages.value = res.data.results || []
+      // 处理返回的数据，确保字段正确映射
+      villages.value = (res.data.results || []).map(village => ({
+        ...village,
+        // 清理cover_image字段
+        cover_image: village.cover_image ? village.cover_image.replace(/[`\s]/g, '') : ''
+      }))
       total.value = res.data.count || 0
     } else {
       ElMessage.error(res.message || '获取乡村数据失败')

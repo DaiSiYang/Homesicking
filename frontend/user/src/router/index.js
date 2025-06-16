@@ -96,10 +96,10 @@ const routes = [
         meta: { title: '订单详情', requiresAuth: true }
       },
       {
-        path: 'payment/:id',
+        path: 'payment',  // 移除 /:id 参数
         name: 'Payment',
         component: () => import('@/views/payment/index.vue'),
-        meta: { title: '支付', requiresAuth: true }
+        meta: { requiresAuth: true }
       },
       {
         path: 'payment/success',

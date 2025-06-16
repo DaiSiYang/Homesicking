@@ -4,6 +4,10 @@ from rest_framework import serializers
 from .models import CartItem, Order, OrderItem, Payment, Refund
 from apps.products.models import Product, Food
 from apps.homestays.models import RoomType, RoomInventory
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -15,10 +19,51 @@ class CartItemSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CartItem
-        fields = ['id', 'user_id', 'item_type', 'product_id', 'food_id', 'room_type_id',
+        fields = ['id', 'user_id', 'item_type', 'product', 'food', 'room_type',
                  'item_name', 'item_image', 'item_price', 'quantity', 'total_price',
                  'check_in_date', 'check_out_date', 'created_at']
         read_only_fields = ['user_id', 'created_at']
+    
+    def validate(self, data):
+        """自定义验证"""
+        logger.info(f"序列化器验证数据: {data}")
+        
+        item_type = data.get('item_type')
+        logger.info(f"item_type: {item_type}")
+        
+        if not item_type:
+            raise serializers.ValidationError({
+                'item_type': '商品类型是必需的，可选值: product, food, room'
+            })
+        
+        if item_type not in ['product', 'food', 'room']:
+            raise serializers.ValidationError({
+                'item_type': f'无效的商品类型: {item_type}，可选值: product, food, room'
+            })
+        
+        # 验证对应的ID字段 - 使用正确的字段名
+        if item_type == 'product':
+            product = data.get('product')
+            if not product:
+                raise serializers.ValidationError({
+                    'product': '添加特产时必须提供 product'
+                })
+                
+        elif item_type == 'food':
+            food = data.get('food')
+            if not food:
+                raise serializers.ValidationError({
+                    'food': '添加美食时必须提供 food'
+                })
+                
+        elif item_type == 'room':
+            room_type = data.get('room_type')
+            if not room_type:
+                raise serializers.ValidationError({
+                    'room_type': '添加房间时必须提供 room_type'
+                })
+        
+        return data
     
     def get_item_name(self, obj):
         if obj.item_type == 'product' and obj.product:
@@ -154,4 +199,4 @@ class RefundCreateSerializer(serializers.Serializer):
     """创建退款申请序列化器"""
     order_id = serializers.IntegerField(required=True)
     reason = serializers.ChoiceField(choices=Refund.REFUND_REASON_CHOICES)
-    reason_detail = serializers.CharField(required=False, allow_blank=True) 
+    reason_detail = serializers.CharField(required=False, allow_blank=True)

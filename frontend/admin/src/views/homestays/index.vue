@@ -58,7 +58,7 @@
         </el-table-column>
         <el-table-column prop="price" label="价格/晚" width="100">
           <template #default="scope">
-            <span class="text-orange-500">¥{{ scope.row.price.toFixed(2) }}</span>
+            <span class="text-orange-500">¥{{ parseFloat(scope.row.lowest_price || scope.row.price || 0).toFixed(2) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="capacity" label="可住人数" width="80" />
@@ -75,12 +75,13 @@
               <el-button type="primary" size="small" text @click="viewHomestayDetail(scope.row)">
                 详情
               </el-button>
+              <!-- 在模板中更新函数名 -->
               <el-button 
                 v-if="scope.row.status === 'pending'"
                 type="success" 
                 size="small" 
                 text
-                @click="reviewHomestay(scope.row, 'approved')"
+                @click="handleReviewHomestay(scope.row, 'approved')"
               >
                 通过
               </el-button>
@@ -89,7 +90,7 @@
                 type="danger" 
                 size="small" 
                 text
-                @click="reviewHomestay(scope.row, 'rejected')"
+                @click="handleReviewHomestay(scope.row, 'rejected')"
               >
                 拒绝
               </el-button>
@@ -124,49 +125,23 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+
+// 导入API
+import {
+  getHomestayList,
+  updateHomestayStatus,
+  reviewHomestay as reviewHomestayApi  // 重命名导入的API函数
+} from '@/api/homestay'
 
 const router = useRouter()
 
 // 数据
-const homestays = ref([
-  {
-    id: 1,
-    name: '青山绿水民宿双人间',
-    cover_image: 'https://via.placeholder.com/200x200',
-    merchant_id: 2,
-    merchant_name: '青山绿水民宿',
-    type: 'single',
-    price: 388.00,
-    capacity: 2,
-    status: 'active'
-  },
-  {
-    id: 2,
-    name: '山水间农家乐四人间',
-    cover_image: 'https://via.placeholder.com/200x200',
-    merchant_id: 1,
-    merchant_name: '山水间农家乐',
-    type: 'shared',
-    price: 588.00,
-    capacity: 4,
-    status: 'active'
-  },
-  {
-    id: 3,
-    name: '田园风光小屋整套',
-    cover_image: 'https://via.placeholder.com/200x200',
-    merchant_id: 3,
-    merchant_name: '田园风光小屋',
-    type: 'entire',
-    price: 888.00,
-    capacity: 6,
-    status: 'pending'
-  }
-])
+// 将硬编码的数组改为空数组
+const homestays = ref([])
 
 const loading = ref(false)
 const searchQuery = ref('')
@@ -174,19 +149,36 @@ const filterStatus = ref('')
 const filterType = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(3)
+// 将硬编码的total改为0
+const total = ref(0)
 
 // 获取民宿列表
+// 删除这里的重复导入语句
+// import {
+//   getHomestayList,
+//   updateHomestayStatus,
+//   reviewHomestay
+// } from '@/api/homestay'
+
+// 更新fetchHomestays函数
 const fetchHomestays = async () => {
   loading.value = true
   try {
-    // 模拟API请求
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // 实际项目中这里应该调用API获取数据
-    loading.value = false
+    const params = {
+      page: currentPage.value,
+      page_size: pageSize.value,
+      search: searchQuery.value,
+      status: filterStatus.value,
+      type: filterType.value
+    }
+    
+    const response = await getHomestayList(params)
+    homestays.value = response.data.results
+    total.value = response.data.count
   } catch (error) {
     console.error('获取民宿列表失败:', error)
     ElMessage.error('获取民宿列表失败')
+  } finally {
     loading.value = false
   }
 }
@@ -196,10 +188,18 @@ const viewHomestayDetail = (homestay) => {
   router.push(`/homestays/${homestay.id}`)
 }
 
-// 审核民宿
-const reviewHomestay = (homestay, action) => {
-  ElMessage.success(`已${action === 'approved' ? '通过' : '拒绝'}民宿"${homestay.name}"的审核`)
-  homestay.status = action === 'approved' ? 'active' : 'rejected'
+// 审核民宿 - 重命名本地函数
+const handleReviewHomestay = async (homestay, action) => {
+  try {
+    await reviewHomestayApi(homestay.id, { action })
+    ElMessage.success(`已${action === 'approved' ? '通过' : '拒绝'}民宿"${homestay.name}"的审核`)
+    homestay.status = action === 'approved' ? 'active' : 'rejected'
+    // 重新获取数据
+    await fetchHomestays()
+  } catch (error) {
+    console.error('审核失败:', error)
+    ElMessage.error('审核失败')
+  }
 }
 
 // 切换民宿状态
@@ -266,4 +266,4 @@ fetchHomestays()
 .homestays-container {
   padding: 20px;
 }
-</style> 
+</style>

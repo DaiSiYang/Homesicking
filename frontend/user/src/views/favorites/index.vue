@@ -166,10 +166,33 @@ const currentPage = ref(1)
 const pageSize = ref(12)
 const total = ref(0)
 
-// 获取收藏列表
+// 获取收藏列表 - 支持localStorage
 const fetchFavorites = async () => {
   try {
     loading.value = true
+    
+    // 首先从localStorage读取收藏数据
+    const localFavorites = localStorage.getItem('favorites')
+    if (localFavorites) {
+      const favoritesData = JSON.parse(localFavorites)
+      
+      // 根据activeTab过滤数据
+      let filteredFavorites = favoritesData
+      if (activeTab.value !== 'all') {
+        filteredFavorites = favoritesData.filter(item => item.type === activeTab.value)
+      }
+      
+      // 分页处理
+      const startIndex = (currentPage.value - 1) * pageSize.value
+      const endIndex = startIndex + pageSize.value
+      favorites.value = filteredFavorites.slice(startIndex, endIndex)
+      total.value = filteredFavorites.length
+      
+      loading.value = false
+      return
+    }
+    
+    // 如果localStorage没有数据，调用API
     const params = {
       page: currentPage.value,
       page_size: pageSize.value

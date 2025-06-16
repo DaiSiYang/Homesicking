@@ -47,9 +47,21 @@ export const useUserStore = defineStore('user', {
           ElMessage.error(res.message || '登录失败')
           return Promise.reject(res)
         }
-      } catch (error) {
+      } // 修改 loginUser 方法的错误处理部分
+      catch (error) {
         console.error('登录失败:', error)
-        ElMessage.error('登录失败，请检查网络连接')
+        
+        // 提取具体的错误信息
+        let errorMessage = '登录失败'
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message
+        } else if (error.response?.data?.detail) {
+          errorMessage = error.response.data.detail
+        } else if (error.message) {
+          errorMessage = error.message
+        }
+        
+        ElMessage.error(errorMessage)
         return Promise.reject(error)
       }
     },

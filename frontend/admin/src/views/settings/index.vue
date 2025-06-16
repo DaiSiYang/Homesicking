@@ -61,7 +61,13 @@
                   <el-input v-model="paymentSettings.alipayAppId" />
                 </el-form-item>
                 <el-form-item label="商户私钥" label-width="120px">
+                  <!-- 修复前 -->
                   <el-input v-model="paymentSettings.alipayPrivateKey" type="textarea" rows="3" />
+                  <el-input v-model="paymentSettings.alipayPublicKey" type="textarea" rows="3" />
+                  
+                  <!-- 修复后 -->
+                  <el-input v-model="paymentSettings.alipayPrivateKey" type="textarea" :rows="3" />
+                  <el-input v-model="paymentSettings.alipayPublicKey" type="textarea" :rows="3" />
                 </el-form-item>
                 <el-form-item label="支付宝公钥" label-width="120px">
                   <el-input v-model="paymentSettings.alipayPublicKey" type="textarea" rows="3" />

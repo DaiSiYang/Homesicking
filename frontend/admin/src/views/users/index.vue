@@ -200,54 +200,26 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import { 
+  getUserList, 
+  getUserDetail, 
+  updateUserStatus, 
+  resetUserPassword, 
+  getUserOrders 
+} from '@/api/user'
 
 // 数据
-const users = ref([
-  {
-    id: 1,
-    username: 'user001',
-    nickname: '张三',
-    phone: '13812345678',
-    email: 'user001@example.com',
-    avatar: 'https://via.placeholder.com/100',
-    created_at: '2023-10-15 09:32:45',
-    last_login_time: '2023-11-20 15:30:45',
-    status: 'active'
-  },
-  {
-    id: 2,
-    username: 'user002',
-    nickname: '李四',
-    phone: '13987654321',
-    email: 'user002@example.com',
-    avatar: 'https://via.placeholder.com/100',
-    created_at: '2023-10-18 14:25:36',
-    last_login_time: '2023-11-19 10:15:22',
-    status: 'active'
-  },
-  {
-    id: 3,
-    username: 'user003',
-    nickname: '王五',
-    phone: '13765432198',
-    email: 'user003@example.com',
-    avatar: 'https://via.placeholder.com/100',
-    created_at: '2023-11-01 11:42:18',
-    last_login_time: '2023-11-18 16:45:30',
-    status: 'disabled'
-  }
-])
-
+const users = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const filterStatus = ref('')
 const dateRange = ref([])
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(3)
+const total = ref(0)
 
 // 用户详情相关
 const drawerVisible = ref(false)
@@ -266,13 +238,23 @@ const resetPasswordForm = reactive({
 const fetchUsers = async () => {
   loading.value = true
   try {
-    // 模拟API请求
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // 实际项目中这里应该调用API获取数据
-    loading.value = false
+    const params = {
+      page: currentPage.value,
+      page_size: pageSize.value,
+      search: searchQuery.value,
+      status: filterStatus.value,
+      start_date: dateRange.value[0],
+      end_date: dateRange.value[1]
+    }
+    
+    const response = await getUserList(params)
+    // 修改这两行以匹配后端返回的数据结构
+    users.value = response.data.users  // 改为 users
+    total.value = response.data.pagination.total_count  // 改为 pagination.total_count
   } catch (error) {
     console.error('获取用户列表失败:', error)
     ElMessage.error('获取用户列表失败')
+  } finally {
     loading.value = false
   }
 }
@@ -283,86 +265,42 @@ const viewUserDetail = async (user) => {
   drawerVisible.value = true
   
   try {
-    // 模拟获取用户订单
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    // 模拟数据
-    userOrders.value = [
-      {
-        id: 'DD20230001',
-        type: 'product',
-        title: '葫芦峪蜂蜜',
-        amount: 128.00,
-        status: 'completed',
-        created_at: '2023-11-20 14:32:25'
-      },
-      {
-        id: 'DD20230002',
-        type: 'homestay',
-        title: '青山绿水民宿双人间',
-        amount: 388.00,
-        status: 'paid',
-        created_at: '2023-11-19 09:15:42'
-      }
-    ]
+    const response = await getUserOrders(user.id)
+    userOrders.value = response.data.results
   } catch (error) {
     console.error('获取用户订单失败:', error)
     ElMessage.error('获取用户订单失败')
   }
 }
 
-// 切换用户状态
-const toggleUserStatus = (user) => {
-  const newStatus = user.status === 'active' ? 'disabled' : 'active'
-  const actionText = newStatus === 'active' ? '启用' : '禁用'
-  
-  ElMessageBox.confirm(`确定要${actionText}用户"${user.username}"吗？`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    try {
-      // 模拟API请求
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      // 更新本地状态
-      user.status = newStatus
-      ElMessage.success(`已${actionText}用户"${user.username}"`)
-    } catch (error) {
-      console.error('操作失败:', error)
-      ElMessage.error('操作失败')
-    }
-  }).catch(() => {})
-}
-
-// 重置用户密码
-const resetUserPassword = (user) => {
-  currentUser.value = user
-  resetPasswordForm.password = ''
-  resetPasswordForm.confirmPassword = ''
-  resetPasswordDialogVisible.value = true
-}
-
-// 确认重置密码
-const confirmResetPassword = async () => {
-  if (!resetPasswordForm.password) {
-    ElMessage.warning('请输入新密码')
-    return
+// 更新用户状态
+const handleStatusChange = async (user, status) => {
+  try {
+    await updateUserStatus(user.id, status)
+    ElMessage.success('状态更新成功')
+    await fetchUsers()
+  } catch (error) {
+    console.error('操作失败:', error)
+    ElMessage.error('操作失败')
+    // 恢复原状态
+    user.status = user.status === 'active' ? 'disabled' : 'active'
   }
-  
+}
+
+// 重置密码
+const handleResetPassword = async () => {
   if (resetPasswordForm.password !== resetPasswordForm.confirmPassword) {
-    ElMessage.warning('两次输入的密码不一致')
+    ElMessage.error('两次输入的密码不一致')
     return
   }
   
   resetPasswordLoading.value = true
   try {
-    // 模拟API请求
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
-    // 实际项目中这里应该调用API重置密码
-    ElMessage.success(`已重置用户"${currentUser.value.username}"的密码`)
+    await resetUserPassword(currentUser.value.id, resetPasswordForm.password)
+    ElMessage.success('密码重置成功')
     resetPasswordDialogVisible.value = false
+    resetPasswordForm.password = ''
+    resetPasswordForm.confirmPassword = ''
   } catch (error) {
     console.error('重置密码失败:', error)
     ElMessage.error('重置密码失败')
@@ -371,34 +309,42 @@ const confirmResetPassword = async () => {
   }
 }
 
-// 获取订单状态类型
-const getOrderStatusType = (status) => {
-  const types = {
-    pending: 'warning',
-    paid: 'primary',
-    completed: 'success',
-    cancelled: 'info'
-  }
-  return types[status] || 'info'
+// 搜索
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchUsers()
 }
 
-// 获取订单状态文本
-const getOrderStatusText = (status) => {
-  const texts = {
-    pending: '待付款',
-    paid: '已付款',
-    completed: '已完成',
-    cancelled: '已取消'
-  }
-  return texts[status] || '未知'
+// 重置搜索
+const handleReset = () => {
+  searchQuery.value = ''
+  filterStatus.value = ''
+  dateRange.value = []
+  currentPage.value = 1
+  fetchUsers()
+}
+
+// 分页变化
+const handlePageChange = (page) => {
+  currentPage.value = page
+  fetchUsers()
+}
+
+// 页面大小变化
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  fetchUsers()
 }
 
 // 初始化
-fetchUsers()
+onMounted(() => {
+  fetchUsers()
+})
 </script>
 
 <style scoped>
 .users-container {
   padding: 20px;
 }
-</style> 
+</style>

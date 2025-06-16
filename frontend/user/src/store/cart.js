@@ -5,7 +5,10 @@ import { ElMessage } from 'element-plus'
 export const useCartStore = defineStore('cart', {
   state: () => ({
     cartItems: [],
-    useMockData: false // 改为 false
+    useMockData: false,
+    loading: false,
+    totalQuantity: 0,
+    totalPrice: 0
   }),
   
   getters: {
@@ -15,10 +18,34 @@ export const useCartStore = defineStore('cart', {
   },
   
   actions: {
-    // 获取购物车列表
+    // 获取购物车列表 - 支持localStorage
     async fetchCartItems() {
       this.loading = true
       try {
+        // 首先尝试从localStorage读取
+        const localCart = localStorage.getItem('cart')
+        if (localCart) {
+          const rawCartItems = JSON.parse(localCart)
+          
+          // 转换数据格式以匹配页面期望的结构
+          this.cartItems = rawCartItems.map(item => ({
+            id: item.id,
+            productId: item.productId,
+            item_name: item.name,
+            item_type: 'product',
+            item_price: item.price,
+            item_image: item.image || '',
+            quantity: item.quantity,
+            total_price: item.price * item.quantity,
+            addTime: item.addTime
+          }))
+          
+          this.calculateTotals()
+          this.loading = false
+          return Promise.resolve({ items: this.cartItems })
+        }
+        
+        // 如果localStorage没有数据，再调用API
         if (this.useMockData) {
           // 使用模拟数据
           setTimeout(() => {
@@ -184,8 +211,18 @@ export const useCartStore = defineStore('cart', {
     // 计算总数量和总价格
     calculateTotals() {
       this.totalQuantity = this.cartItems.reduce((sum, item) => sum + item.quantity, 0)
-      this.totalPrice = this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    },
+      this.totalPrice = this.cartItems.reduce((sum, item) => {
+        // 兼容不同的价格字段名
+        const price = item.item_price || item.price || 0
+        return sum + (price * item.quantity)
+      }, 0)
+      
+      // 确保每个商品都有total_price字段
+      this.cartItems.forEach(item => {
+        const price = item.item_price || item.price || 0
+        item.total_price = price * item.quantity
+      })
+    }, // 添加这个逗号
     
     // 获取模拟购物车数据
     getMockCartItems() {

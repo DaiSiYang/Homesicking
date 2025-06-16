@@ -51,15 +51,11 @@ class VillageListView(ListAPIView):
         return queryset.order_by(order_field)
     
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        
-        serializer = self.get_serializer(queryset, many=True)
-        return ApiResponse(data=serializer.data)
+        response = super().list(request, *args, **kwargs)
+        print(f"--- Village List API Response ---")
+        print(response.data)
+        print(f"---------------------------------")
+        return response
 
 
 class VillageDetailView(RetrieveAPIView):
@@ -71,13 +67,11 @@ class VillageDetailView(RetrieveAPIView):
     permission_classes = [AllowAny]
     
     def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        
-        # 增加浏览量
-        Village.objects.filter(id=instance.id).update(views=F('views') + 1)
-        
-        serializer = self.get_serializer(instance)
-        return ApiResponse(data=serializer.data)
+        response = super().retrieve(request, *args, **kwargs)
+        print(f"--- Village Detail API Response (ID: {kwargs.get('pk')}) ---")
+        print(response.data)
+        print(f"------------------------------------------------------")
+        return response
 
 
 class RecommendedVillageView(APIView):

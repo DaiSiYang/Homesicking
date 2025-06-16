@@ -156,4 +156,16 @@ class RoomInventory(models.Model):
         unique_together = ['room_type', 'date']
     
     def __str__(self):
-        return f"{self.room_type.name}-{self.date}" 
+        return f"{self.room_type.name}-{self.date}"
+
+
+class HomestayReview(models.Model):
+    homestay = models.ForeignKey(Homestay, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    rating = models.IntegerField(_('评分'), choices=[(i, i) for i in range(1, 6)])
+    comment = models.TextField(_('评论'))
+    created_at = models.DateTimeField(_('创建时间'), auto_now_add=True)
+    
+    class Meta:
+        verbose_name = _('民宿评价')
+        verbose_name_plural = _('民宿评价')

@@ -40,10 +40,10 @@
               v-model="form.merchantName"
               type="text"
               required
-              class="rural-input pl-12"
+              class="input-with-icon"
               placeholder="请输入商户名称"
             />
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center">
+            <div class="input-icon-left">
               <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
@@ -62,10 +62,10 @@
               v-model="form.username"
               type="text"
               required
-              class="rural-input pl-12"
+              class="input-with-icon"
               placeholder="请输入用户名"
             />
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center">
+            <div class="input-icon-left">
               <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
@@ -84,10 +84,10 @@
               v-model="form.email"
               type="email"
               required
-              class="rural-input pl-12"
+              class="input-with-icon"
               placeholder="请输入邮箱地址"
             />
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center">
+            <div class="input-icon-left">
               <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
@@ -106,10 +106,10 @@
               v-model="form.phone"
               type="tel"
               required
-              class="rural-input pl-12"
+              class="input-with-icon"
               placeholder="请输入手机号码"
             />
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center">
+            <div class="input-icon-left">
               <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
@@ -128,10 +128,10 @@
               v-model="form.password"
               :type="showPassword ? 'text' : 'password'"
               required
-              class="rural-input pl-12 pr-12"
+              class="input-with-right-icon"
               placeholder="请输入密码"
             />
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center">
+            <div class="input-icon-left">
               <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
@@ -139,7 +139,7 @@
             <button
               type="button"
               @click="showPassword = !showPassword"
-              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              class="input-icon-right transition-colors duration-200"
             >
               <svg v-if="showPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -163,10 +163,10 @@
               v-model="form.confirmPassword"
               :type="showConfirmPassword ? 'text' : 'password'"
               required
-              class="rural-input pl-12 pr-12"
+              class="input-with-right-icon"
               placeholder="请再次输入密码"
             />
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center">
+            <div class="input-icon-left">
               <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
@@ -174,7 +174,7 @@
             <button
               type="button"
               @click="showConfirmPassword = !showConfirmPassword"
-              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              class="input-icon-right transition-colors duration-200"
             >
               <svg v-if="showConfirmPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -197,7 +197,7 @@
               id="merchantType"
               v-model="form.merchantType"
               required
-              class="rural-input pl-12 appearance-none"
+              class="input-with-right-icon appearance-none"
             >
               <option value="">请选择商户类型</option>
               <option value="homestay">民宿</option>
@@ -206,12 +206,12 @@
               <option value="service">服务</option>
               <option value="other">其他</option>
             </select>
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center">
+            <div class="input-icon-left">
               <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
-            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <div class="input-icon-right pointer-events-none">
               <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
@@ -372,8 +372,44 @@ const handleRegister = async () => {
   }
 }
 
+/* 输入框样式优化 */
+.input-with-icon {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200;
+  padding-left: 3rem !important;
+  position: relative;
+}
+
+.input-with-right-icon {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200;
+  padding-left: 3rem !important;
+  padding-right: 3rem !important;
+  position: relative;
+}
+
+.input-icon-left {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.input-icon-right {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  color: #9CA3AF;
+}
+
+.input-icon-right:hover {
+  color: #6B7280;
+}
+
 /* 下拉框样式 */
-select.rural-input {
+select.input-with-right-icon {
   background-image: none;
 }
 </style>

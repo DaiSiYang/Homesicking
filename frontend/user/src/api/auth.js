@@ -1,7 +1,7 @@
 import request from '@/utils/request'
 
 // 用户登录
-export function login(data) {
+export function loginUser(data) {
   return request({
     url: '/auth/login/',
     method: 'post',
@@ -10,7 +10,7 @@ export function login(data) {
 }
 
 // 用户注册
-export function register(data) {
+export function registerUser(data) {
   return request({
     url: '/auth/register/',
     method: 'post',
@@ -27,7 +27,12 @@ export function logout() {
 }
 
 // 获取用户信息
-
+export function getUserInfo() {
+  return request({
+    url: '/profile/',
+    method: 'get'
+  })
+}
 
 // 更新用户信息
 export function updateUserInfo(data) {

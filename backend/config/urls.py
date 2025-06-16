@@ -55,6 +55,14 @@ merchant_api_patterns = [
 # 管理端API路由
 admin_api_patterns = [
     path('auth/', include('apps.api_admin.urls.auth_urls')),
+    path('dashboard/', include('apps.api_admin.urls.dashboard_urls')),
+    path('users/', include('apps.api_admin.urls.user_urls')),
+    path('merchants/', include('apps.api_admin.urls.merchant_urls')),  # 添加这一行
+    # path('products/', include('apps.api_admin.urls.product_urls')),  # 暂时注释，缺少 product_views.py
+    # path('homestays/', include('apps.api_admin.urls.homestay_urls')),  # 暂时注释，缺少 homestay_views.py
+    # path('orders/', include('apps.api_admin.urls.order_urls')),  # 暂时注释，缺少 order_views.py
+    # path('content/', include('apps.api_admin.urls.content_urls')),  # 暂时注释，缺少 content_views.py
+    # path('settings/', include('apps.api_admin.urls.settings_urls')),  # 暂时注释，缺少 settings_views.py
     # 管理端业务路由
     path('users/', include('apps.users.urls.user_urls')),
     # path('merchants/', include('apps.users.urls.merchant_urls')),  # 文件已删除，功能移到admin端

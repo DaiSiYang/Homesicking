@@ -61,81 +61,155 @@ class CartItemListCreateView(ListCreateAPIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        # 验证商品是否存在
-        item_type = serializer.validated_data.get('item_type')
-        product_id = serializer.validated_data.get('product_id')
-        food_id = serializer.validated_data.get('food_id')
-        room_type_id = serializer.validated_data.get('room_type_id')
-        check_in_date = serializer.validated_data.get('check_in_date')
-        check_out_date = serializer.validated_data.get('check_out_date')
-        
-        if item_type == 'product' and product_id:
-            get_object_or_404(Product, id=product_id, status='approved')
-        elif item_type == 'food' and food_id:
-            get_object_or_404(Food, id=food_id, status='approved')
-        elif item_type == 'room' and room_type_id:
-            get_object_or_404(RoomType, id=room_type_id, status='active')
-            if not check_in_date or not check_out_date:
+        try:
+            # 记录请求数据
+            logger.info(f"购物车添加请求 - 用户: {request.user}, 数据: {request.data}")
+            
+            serializer = self.get_serializer(data=request.data)
+            
+            # 详细的验证错误处理
+            if not serializer.is_valid():
+                logger.error(f"购物车数据验证失败 - 用户: {request.user}, 错误: {serializer.errors}, 请求数据: {request.data}")
                 return ApiResponse(
                     code=400,
-                    message="添加房间到购物车需要提供入住和退房日期",
+                    message="数据验证失败",
+                    data={
+                        'errors': serializer.errors,
+                        'received_data': request.data
+                    },
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            if check_in_date >= check_out_date:
+            
+            # 验证商品是否存在
+            item_type = serializer.validated_data.get('item_type')
+            product = serializer.validated_data.get('product')  # 改为 product
+            food = serializer.validated_data.get('food')        # 改为 food
+            room_type = serializer.validated_data.get('room_type')  # 改为 room_type
+            check_in_date = serializer.validated_data.get('check_in_date')
+            check_out_date = serializer.validated_data.get('check_out_date')
+            
+            logger.info(f"验证数据 - item_type: {item_type}, product: {product}, food: {food}, room_type: {room_type}")
+            
+            if item_type == 'product' and product:
+                try:
+                    # product 已经是 Product 对象，检查状态
+                    if product.status != 'approved':
+                        logger.error(f"商品未审核 - product: {product}")
+                        return ApiResponse(
+                            code=400,
+                            message=f"商品未审核 (ID: {product.id})",
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                except Exception as e:
+                    logger.error(f"商品验证错误 - product: {product}, 错误: {str(e)}")
+                    return ApiResponse(
+                        code=400,
+                        message=f"商品验证失败",
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                # 检查购物车中是否已存在相同商品
+                existing_item = CartItem.objects.filter(
+                    user=request.user,
+                    item_type='product',
+                    product=product  # 使用 product 而不是 product_id
+                ).first()
+                
+            elif item_type == 'food' and food:
+                try:
+                    # food 已经是 Food 对象，检查状态
+                    if food.status != 'approved':
+                        logger.error(f"美食未审核 - food: {food}")
+                        return ApiResponse(
+                            code=400,
+                            message=f"美食未审核 (ID: {food.id})",
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                except Exception as e:
+                    logger.error(f"美食验证错误 - food: {food}, 错误: {str(e)}")
+                    return ApiResponse(
+                        code=400,
+                        message=f"美食验证失败",
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                # 检查购物车中是否已存在相同美食
+                existing_item = CartItem.objects.filter(
+                    user=request.user,
+                    item_type='food',
+                    food=food  # 使用 food 而不是 food_id
+                ).first()
+                
+            elif item_type == 'room' and room_type:
+                # 房型验证和查询逻辑...
+                existing_item = CartItem.objects.filter(
+                    user=request.user,
+                    item_type='room',
+                    room_type=room_type  # 使用 room_type 而不是 room_type_id
+                ).first()
+                
+            else:
+                logger.error(f"无效的商品类型或ID - item_type: {item_type}, product: {product}, food: {food}, room_type: {room_type}")
                 return ApiResponse(
                     code=400,
-                    message="退房日期必须晚于入住日期",
+                    message="无效的商品类型或商品ID",
+                    data={
+                        'item_type': item_type,
+                        'product': str(product) if product else None,
+                        'food': str(food) if food else None,
+                        'room_type': str(room_type) if room_type else None
+                    },
                     status=status.HTTP_400_BAD_REQUEST
                 )
-        else:
+            
+            # 检查购物车中是否已存在相同商品
+            existing_item = None
+            if item_type == 'product':
+                existing_item = CartItem.objects.filter(
+                    user=request.user,
+                    item_type='product',
+                    product_id=product_id
+                ).first()
+            elif item_type == 'food':
+                existing_item = CartItem.objects.filter(
+                    user=request.user,
+                    item_type='food',
+                    food_id=food_id
+                ).first()
+            elif item_type == 'room':
+                existing_item = CartItem.objects.filter(
+                    user=request.user,
+                    item_type='room',
+                    room_type_id=room_type_id,
+                    check_in_date=check_in_date,
+                    check_out_date=check_out_date
+                ).first()
+            
+            if existing_item and item_type in ['product', 'food']:
+                # 更新数量
+                existing_item.quantity += serializer.validated_data.get('quantity', 1)
+                existing_item.save()
+                return ApiResponse(
+                    message="购物车数量已更新",
+                    data=CartItemSerializer(existing_item).data
+                )
+            
+            # 创建新的购物车项
+            serializer.save(user=self.request.user)
+            
             return ApiResponse(
-                code=400,
-                message="无效的商品类型或商品ID",
-                status=status.HTTP_400_BAD_REQUEST
+                message="商品已添加到购物车",
+                data=serializer.data
             )
         
-        # 检查购物车中是否已存在相同商品
-        existing_item = None
-        if item_type == 'product':
-            existing_item = CartItem.objects.filter(
-                user=request.user,
-                item_type='product',
-                product_id=product_id
-            ).first()
-        elif item_type == 'food':
-            existing_item = CartItem.objects.filter(
-                user=request.user,
-                item_type='food',
-                food_id=food_id
-            ).first()
-        elif item_type == 'room':
-            existing_item = CartItem.objects.filter(
-                user=request.user,
-                item_type='room',
-                room_type_id=room_type_id,
-                check_in_date=check_in_date,
-                check_out_date=check_out_date
-            ).first()
-        
-        if existing_item and item_type in ['product', 'food']:
-            # 更新数量
-            existing_item.quantity += serializer.validated_data.get('quantity', 1)
-            existing_item.save()
+        except Exception as e:
+            logger.error(f"购物车添加异常 - 用户: {request.user}, 错误: {str(e)}, 请求数据: {request.data}")
             return ApiResponse(
-                message="购物车数量已更新",
-                data=CartItemSerializer(existing_item).data
+                code=500,
+                message="添加到购物车失败",
+                data={'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
-        # 创建新的购物车项
-        serializer.save(user=self.request.user)
-        
-        return ApiResponse(
-            message="商品已添加到购物车",
-            data=serializer.data
-        )
 
 
 class CartItemUpdateView(APIView):

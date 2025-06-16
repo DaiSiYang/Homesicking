@@ -83,11 +83,23 @@ class OrderCreateView(APIView):
     
     @transaction.atomic
     def post(self, request):
+        # 添加请求数据日志
+        logger.info(f"订单创建请求 - 用户: {request.user}, 数据: {request.data}")
+        
         serializer = OrderCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            logger.error(f"订单数据验证失败 - 用户: {request.user}, 错误: {serializer.errors}, 请求数据: {request.data}")
+            return ApiResponse(
+                code=400,
+                message=f"数据验证失败: {serializer.errors}",
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         cart_ids = serializer.validated_data.get('cart_ids', [])
+        logger.info(f"购物车ID列表: {cart_ids}")
+        
         if not cart_ids:
+            logger.warning(f"购物车ID为空 - 用户: {request.user}")
             return ApiResponse(
                 code=400,
                 message="请选择要购买的商品",
@@ -96,7 +108,10 @@ class OrderCreateView(APIView):
         
         # 获取购物车项
         cart_items = CartItem.objects.filter(id__in=cart_ids, user=request.user)
+        logger.info(f"找到购物车项数量: {cart_items.count()}, 期望数量: {len(cart_ids)}")
+        
         if not cart_items or cart_items.count() != len(cart_ids):
+            logger.error(f"购物车项不匹配 - 用户: {request.user}, 找到: {cart_items.count()}, 期望: {len(cart_ids)}")
             return ApiResponse(
                 code=400,
                 message="购物车中的部分商品不存在",
@@ -339,4 +354,4 @@ class OrderCancelView(APIView):
         order.canceled_at = timezone.now()
         order.save()
         
-        return ApiResponse(message="订单已取消") 
+        return ApiResponse(message="订单已取消")

@@ -53,7 +53,7 @@
                   </div>
                 </div>
                 <div class="w-32 text-center">
-                  <span class="text-red-600 font-medium">¥{{ item.item_price.toFixed(2) }}</span>
+                  <span class="text-red-600 font-medium">¥{{ formatPrice(item.item_price) }}</span>
                 </div>
                 <div class="w-32 text-center">
                   <el-input-number 
@@ -65,7 +65,7 @@
                   />
                 </div>
                 <div class="w-32 text-center">
-                  <span class="text-red-600 font-medium">¥{{ item.total_price.toFixed(2) }}</span>
+                  <span class="text-red-600 font-medium">¥{{ formatPrice(item.total_price) }}</span>
                 </div>
                 <div class="w-24 text-center">
                   <el-button type="danger" link @click="handleRemove(item.id)">删除</el-button>
@@ -254,4 +254,9 @@ onMounted(async () => {
     console.error('获取购物车失败:', error)
   }
 })
-</script> 
+
+// 格式化价格的方法
+const formatPrice = (price) => {
+  return (price || 0).toFixed(2)
+}
+</script>

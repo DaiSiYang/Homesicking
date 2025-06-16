@@ -2,6 +2,8 @@ import json
 from rest_framework import serializers
 from .models import Village, VillageGallery, Attraction, AttractionGallery
 from apps.regions.models import Region
+# 添加这行导入
+from apps.homestays.serializers import HomestayListSerializer
 
 
 class VillageGallerySerializer(serializers.ModelSerializer):
@@ -16,6 +18,19 @@ class AttractionGallerySerializer(serializers.ModelSerializer):
     class Meta:
         model = AttractionGallery
         fields = ['id', 'image_url', 'caption', 'order']
+
+
+class AttractionListSerializer(serializers.ModelSerializer):
+    """景点列表序列化器"""
+    village_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Attraction
+        fields = ['id', 'name', 'village_id', 'village_name', 'cover_image', 
+                 'intro', 'ticket_price', 'opening_hours']
+    
+    def get_village_name(self, obj):
+        return obj.village.name if obj.village else None
 
 
 class VillageListSerializer(serializers.ModelSerializer):
@@ -47,12 +62,14 @@ class VillageDetailSerializer(serializers.ModelSerializer):
     features = serializers.SerializerMethodField()
     gallery = VillageGallerySerializer(many=True, read_only=True)
     location_obj = serializers.SerializerMethodField()
+    attractions = AttractionListSerializer(many=True, read_only=True)
+    homestays = serializers.SerializerMethodField()
     
     class Meta:
         model = Village
         fields = ['id', 'name', 'region_id', 'region_name', 'region_full_name', 'intro', 
                  'description', 'cover_image', 'location', 'location_obj', 'features', 
-                 'views', 'rating', 'is_recommended', 'gallery', 'created_at']
+                 'views', 'rating', 'is_recommended', 'gallery', 'attractions', 'homestays', 'created_at']
     
     def get_region_name(self, obj):
         return obj.region.name if obj.region else None
@@ -81,19 +98,18 @@ class VillageDetailSerializer(serializers.ModelSerializer):
             }
         except:
             return {"latitude": 0, "longitude": 0}
-
-
-class AttractionListSerializer(serializers.ModelSerializer):
-    """景点列表序列化器"""
-    village_name = serializers.SerializerMethodField()
     
-    class Meta:
-        model = Attraction
-        fields = ['id', 'name', 'village_id', 'village_name', 'cover_image', 
-                 'intro', 'ticket_price', 'opening_hours']
-    
-    def get_village_name(self, obj):
-        return obj.village.name if obj.village else None
+    def get_homestays(self, obj):
+        """获取该乡村的民宿列表"""
+        homestays = obj.homestays.all()[:6]  # 限制数量
+        return [{
+            'id': h.id,
+            'name': h.name,
+            'cover_image': h.cover_image,
+            'intro': h.intro,
+            'lowest_price': str(h.lowest_price),
+            'rating': str(h.rating)
+        } for h in homestays]
 
 
 class AttractionDetailSerializer(serializers.ModelSerializer):
@@ -121,4 +137,4 @@ class AttractionDetailSerializer(serializers.ModelSerializer):
                 "longitude": float(lng)
             }
         except:
-            return {"latitude": 0, "longitude": 0} 
+            return {"latitude": 0, "longitude": 0}

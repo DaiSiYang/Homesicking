@@ -1,9 +1,9 @@
 <template>
-  <div>
+  <div class="home-container">
     <!-- 英雄区域 -->
     <section class="relative h-96 overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-r from-primary-900/80 to-earth-800/60"></div>
-      <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1528702748617-c64d49f918af?ixlib=rb-4.0.3')"></div>
+      <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('/src/assets/images/乡村风景，英国-75678418.webp')"></div>
       <div class="relative z-10 h-full flex items-center justify-center text-center text-white">
         <div class="max-w-4xl mx-auto px-4">
           <h1 class="text-5xl font-calligraphy mb-4 text-shadow-lg">觅乡记</h1>
@@ -47,14 +47,10 @@
 
       <!-- 热门推荐 -->
       <section class="mb-16">
-        <div class="flex justify-between items-center mb-8">
-          <div>
-            <h2 class="text-2xl font-medium text-ink-700 mb-2">热门推荐</h2>
-            <div class="ink-border"></div>
-          </div>
-          <el-button link class="text-primary-600 hover:text-primary-700" @click="$router.push('/products')">
-            查看全部 →
-          </el-button>
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-calligraphy text-ink-700 mb-4">热门推荐</h2>
+          <div class="ink-border mx-auto"></div>
+          <p class="text-ink-500 text-sm">精心设计的行程，带给您难忘的乡村体验</p>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -62,7 +58,7 @@
                class="group card hover:shadow-brush cursor-pointer transition-all duration-300"
                @click="$router.push(`/products/${product.id}`)">
             <div class="relative overflow-hidden rounded-ink mb-4">
-              <img :src="product.image" :alt="product.name" 
+              <img :src="product.cover_image || product.image" :alt="product.name" 
                    class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300">
               <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
@@ -182,7 +178,10 @@ const fetchFeaturedProducts = async () => {
   try {
     loading.value = true
     const response = await getRecommendedProducts()
+    console.log('首页推荐产品API返回数据:', response) // 添加调试日志
+    
     featuredProducts.value = response.data.results || response.data
+    console.log('处理后的推荐产品数据:', featuredProducts.value) // 添加调试日志
   } catch (error) {
     console.error('获取推荐产品失败:', error)
     // 保留原有的模拟数据作为后备

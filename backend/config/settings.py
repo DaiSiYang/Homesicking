@@ -49,13 +49,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'apps.utils.middleware.ErrorHandlingMiddleware',  # 添加错误处理中间件
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -230,18 +231,28 @@ LOGGING = {
             'format': '{levelname} {message}',
             'style': '{',
         },
+        'detailed': {
+            'format': '[{asctime}] {levelname} {name} {funcName}:{lineno} - {message}',
+            'style': '{',
+        },
     },
     'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+            'formatter': 'verbose',
+        },
+        'error_file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': 'error.log',
+            'formatter': 'detailed',
+        },
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'verbose'
-        },
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'debug.log',
-            'formatter': 'verbose'
+            'formatter': 'simple',
         },
     },
     'root': {
@@ -254,10 +265,19 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-        'apps.users.views.auth_views': {
-            'handlers': ['console', 'file'],
+        'apps': {
+            'handlers': ['console', 'file', 'error_file'],
             'level': 'DEBUG',
             'propagate': False,
         },
     },
+}
+
+# 功能开关配置
+FEATURE_FLAGS = {
+    'NEW_USER_REGISTRATION': True,
+    'MERCHANT_AUTO_APPROVAL': False,
+    'ADVANCED_SEARCH': False,
+    'EMAIL_NOTIFICATIONS': False,
+    'PAYMENT_INTEGRATION': False,
 }

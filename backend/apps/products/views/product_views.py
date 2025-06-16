@@ -18,17 +18,23 @@ class ProductListView(ListAPIView):
     pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
+        print("--- ProductListView: get_queryset called ---") # 新增打印
+        print(f"Request query_params: {self.request.query_params}") # 新增打印
+        
         queryset = Product.objects.filter(status='approved')
+        print(f"Initial queryset count (status='approved'): {queryset.count()}") # 新增打印
         
         # 根据乡村筛选
         village_id = self.request.query_params.get('village_id')
         if village_id:
             queryset = queryset.filter(village_id=village_id)
+            print(f"After village_id filter ({village_id}): {queryset.count()}") # 新增打印
         
         # 根据类别筛选
         category_id = self.request.query_params.get('category_id')
         if category_id:
             queryset = queryset.filter(category_id=category_id)
+            print(f"After category_id filter ({category_id}): {queryset.count()}") # 新增打印
         
         # 根据价格范围筛选
         min_price = self.request.query_params.get('min_price')
@@ -38,22 +44,26 @@ class ProductListView(ListAPIView):
                 Q(discount_price__gte=float(min_price)) | 
                 Q(discount_price__isnull=True, price__gte=float(min_price))
             )
+            print(f"After min_price filter ({min_price}): {queryset.count()}") # 新增打印
         if max_price:
             queryset = queryset.filter(
                 Q(discount_price__lte=float(max_price), discount_price__isnull=False) | 
                 Q(discount_price__isnull=True, price__lte=float(max_price))
             )
+            print(f"After max_price filter ({max_price}): {queryset.count()}") # 新增打印
         
         # 根据特色筛选
         is_featured = self.request.query_params.get('is_featured')
         if is_featured:
             is_featured_value = is_featured.lower() == 'true'
             queryset = queryset.filter(is_featured=is_featured_value)
+            print(f"After is_featured filter ({is_featured_value}): {queryset.count()}") # 新增打印
         
         # 根据评分筛选
         min_rating = self.request.query_params.get('min_rating')
         if min_rating:
             queryset = queryset.filter(rating__gte=float(min_rating))
+            print(f"After min_rating filter ({min_rating}): {queryset.count()}") # 新增打印
         
         # 搜索
         keyword = self.request.query_params.get('keyword')
@@ -63,6 +73,7 @@ class ProductListView(ListAPIView):
                 Q(intro__icontains=keyword) |
                 Q(village__name__icontains=keyword)
             )
+            print(f"After keyword filter ('{keyword}'): {queryset.count()}") # 新增打印
         
         # 排序
         sort_by = self.request.query_params.get('sort_by', 'created_at')
@@ -89,17 +100,25 @@ class ProductListView(ListAPIView):
             order_field = '-created_at' if sort_order == 'desc' else 'created_at'
             queryset = queryset.order_by(order_field)
         
+        print(f"Final queryset count before sorting: {queryset.count()}") # 新增打印
+        # 可以在这里打印queryset中的一些具体数据，例如前几个产品的名称
+        # for product in queryset[:3]: 
+        #     print(f"  - Product ID: {product.id}, Name: {product.name}, Cover Image: {product.cover_image}")
+
         return queryset
     
     def list(self, request, *args, **kwargs):
+        print("--- ProductListView: list method called ---") # 新增打印
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
         
         if page is not None:
             serializer = self.get_serializer(page, many=True)
+            print(f"Serialized page data count: {len(serializer.data)}") # 新增打印
             return self.get_paginated_response(serializer.data)
         
         serializer = self.get_serializer(queryset, many=True)
+        print(f"Serialized queryset data count: {len(serializer.data)}") # 新增打印
         return ApiResponse(data=serializer.data)
 
 
@@ -112,8 +131,18 @@ class ProductDetailView(RetrieveAPIView):
     permission_classes = [AllowAny]
     
     def retrieve(self, request, *args, **kwargs):
+        print(f"--- ProductDetailView: retrieve called for pk: {kwargs.get('pk')} ---") # 新增打印
         instance = self.get_object()
-        
+        print(f"Instance found: {instance.name if instance else 'None'}") # 新增打印
+        if instance:
+            print(f"  Cover Image: {instance.cover_image}")
+            if hasattr(instance, 'gallery') and instance.gallery.exists():
+                print(f"  Gallery images count: {instance.gallery.count()}")
+                for img in instance.gallery.all():
+                    print(f"    - Gallery Image URL: {img.image_url}")
+            else:
+                print("  No gallery images or gallery attribute missing.")
+
         # 增加浏览量
         Product.objects.filter(id=instance.id).update(views=F('views') + 1)
         
@@ -138,4 +167,4 @@ class FeaturedProductView(APIView):
         queryset = queryset[:6]
         serializer = ProductListSerializer(queryset, many=True)
         
-        return ApiResponse(data=serializer.data) 
+        return ApiResponse(data=serializer.data)

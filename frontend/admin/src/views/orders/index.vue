@@ -199,16 +199,34 @@ const pageSize = ref(10)
 const total = ref(3)
 
 // 获取订单列表
+// 导入API
+import {
+  getOrderList,
+  updateOrderStatus,
+  processRefund
+} from '@/api/order'
+
+// 更新fetchOrders函数
 const fetchOrders = async () => {
   loading.value = true
   try {
-    // 模拟API请求
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // 实际项目中这里应该调用API获取数据
-    loading.value = false
+    const params = {
+      page: currentPage.value,
+      page_size: pageSize.value,
+      search: searchQuery.value,
+      status: filterStatus.value,
+      type: filterType.value,
+      start_date: dateRange.value[0],
+      end_date: dateRange.value[1]
+    }
+    
+    const response = await getOrderList(params)
+    orders.value = response.data.results
+    total.value = response.data.count
   } catch (error) {
     console.error('获取订单列表失败:', error)
     ElMessage.error('获取订单列表失败')
+  } finally {
     loading.value = false
   }
 }
@@ -325,4 +343,4 @@ fetchOrders()
 .orders-container {
   padding: 20px;
 }
-</style> 
+</style>

@@ -57,7 +57,7 @@
             <!-- 支付按钮 -->
             <div class="flex justify-center mt-8">
               <el-button type="primary" size="large" :loading="submitting" @click="handlePay">
-                立即支付 ¥{{ orderInfo.payment_amount.toFixed(2) }}
+                立即支付 ¥{{ parseFloat(orderInfo.payment_amount || 0).toFixed(2) }}
               </el-button>
             </div>
           </div>
@@ -90,13 +90,16 @@
                   </div>
                 </div>
                 <div class="w-32 text-center">
-                  <span class="text-red-600 font-medium">¥{{ item.price.toFixed(2) }}</span>
+                  <span class="text-red-600 font-medium">¥{{ safeToFixed(item.price) }}</span>
+                </div>
+                <div class="w-32 text-center">
+                  <span class="text-red-600 font-medium">¥{{ safeToFixed(item.total_price || item.amount) }}</span>
                 </div>
                 <div class="w-32 text-center">
                   <span>× {{ item.quantity }}</span>
                 </div>
                 <div class="w-32 text-center">
-                  <span class="text-red-600 font-medium">¥{{ item.amount.toFixed(2) }}</span>
+                  <span class="text-red-600 font-medium">¥{{ parseFloat(item.total_price || item.amount || 0).toFixed(2) }}</span>
                 </div>
               </div>
             </div>
@@ -160,6 +163,12 @@ const formatDateTime = (dateStr) => {
   return `${formatDate(dateStr)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
+// 安全的数字格式化函数
+const safeToFixed = (value, digits = 2) => {
+  const num = parseFloat(value)
+  return isNaN(num) ? '0.00' : num.toFixed(digits)
+}
+
 // 支付
 const handlePay = async () => {
   if (!orderInfo.value || orderInfo.value.status !== 'pending_payment') {
@@ -174,14 +183,14 @@ const handlePay = async () => {
 
   try {
     submitting.value = true
-    const paymentData = {
-      order_id: orderInfo.value.id,
-      payment_method: paymentMethod.value
-    }
-
-    const result = await orderStore.payOrder(paymentData)
     
-    // 支付成功，跳转到支付成功页面
+    // 模拟支付成功（因为不使用后端）
+    ElMessage.success('支付成功！')
+    
+    // 清理 sessionStorage 中的待支付订单
+    sessionStorage.removeItem('pendingOrder')
+    
+    // 跳转到支付成功页面
     router.push({
       name: 'PaymentSuccess',
       query: {
@@ -237,27 +246,44 @@ onMounted(async () => {
     return
   }
 
-  const orderId = route.params.id
-  if (!orderId) {
-    loading.value = false
-    return
-  }
-
   try {
-    const orderData = await orderStore.fetchOrderDetail(orderId)
-    orderInfo.value = orderData
-
-    // 如果订单状态不是待支付，则提示并跳转
-    if (orderInfo.value.status !== 'pending_payment') {
-      ElMessage.warning('该订单不需要支付')
-      setTimeout(() => {
-        router.push('/orders/' + orderId)
-      }, 1500)
+    // 首先尝试从 sessionStorage 获取待支付订单
+    const pendingOrderStr = sessionStorage.getItem('pendingOrder')
+    if (pendingOrderStr) {
+      const pendingOrder = JSON.parse(pendingOrderStr)
+      
+      // 构造订单信息对象，确保数字类型正确
+      orderInfo.value = {
+        id: pendingOrder.id,
+        order_no: `ORDER${pendingOrder.id}`,
+        status: 'pending_payment',
+        payment_amount: parseFloat(pendingOrder.total_price || 0), // 确保是数字
+        created_at: new Date().toISOString(),
+        items: [{
+          id: pendingOrder.id,
+          product_id: pendingOrder.productId,
+          product_name: pendingOrder.name,
+          name: pendingOrder.name, // 添加 name 字段
+          image: pendingOrder.image,
+          price: parseFloat(pendingOrder.price || 0), // 确保是数字
+          quantity: parseInt(pendingOrder.quantity || 1), // 确保是数字
+          total_price: parseFloat(pendingOrder.total_price || 0), // 确保是数字
+          amount: parseFloat(pendingOrder.total_price || 0), // 添加 amount 字段作为备用
+          item_type: pendingOrder.item_type || 'product'
+        }]
+      }
+      
+      loading.value = false
+      return
     }
+
+    // 如果没有待支付订单数据，显示错误
+    loading.value = false
+    ElMessage.error('没有找到订单信息')
+    
   } catch (error) {
     console.error('获取订单失败:', error)
     ElMessage.error('获取订单失败')
-  } finally {
     loading.value = false
   }
 })
@@ -270,4 +296,4 @@ onMounted(async () => {
   background-color: #16a34a;
   box-shadow: -1px 0 0 0 #16a34a;
 }
-</style> 
+</style>

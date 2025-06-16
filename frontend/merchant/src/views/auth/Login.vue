@@ -40,10 +40,10 @@
               v-model="form.username"
               type="text"
               required
-              class="rural-input pl-12"
+              class="input-with-icon"
               placeholder="请输入用户名"
             />
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center">
+            <div class="input-icon-left">
               <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
@@ -62,10 +62,10 @@
               v-model="form.password"
               :type="showPassword ? 'text' : 'password'"
               required
-              class="rural-input pl-12 pr-12"
+              class="input-with-icon input-with-right-icon"
               placeholder="请输入密码"
             />
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center">
+            <div class="input-icon-left">
               <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
@@ -73,7 +73,7 @@
             <button
               type="button"
               @click="showPassword = !showPassword"
-              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              class="input-icon-right"
             >
               <svg v-if="showPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -207,5 +207,59 @@ const handleLogin = async () => {
     transform: scale(1.1);
     opacity: 0.3;
   }
+}
+
+/* 自定义输入框样式 - 完全覆盖rural-input */
+.input-with-icon {
+  width: 100%;
+  padding: 12px 16px 12px 48px !important; /* 左侧留出图标空间 */
+  border: 2px solid rgba(45, 80, 22, 0.1);
+  border-radius: 12px;
+  background: var(--bg-card, #ffffff);
+  color: var(--text-primary, #374151);
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.input-with-right-icon {
+  padding-right: 48px !important; /* 右侧也留出图标空间 */
+}
+
+.input-with-icon:focus {
+  outline: none;
+  border-color: var(--accent-bamboo, #7fb069);
+  box-shadow: 0 0 0 3px rgba(127, 176, 105, 0.1);
+}
+
+.input-with-icon::placeholder {
+  color: var(--text-muted, #9ca3af);
+}
+
+/* 图标定位 */
+.input-icon-left {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.input-icon-right {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: color 0.2s ease;
+  z-index: 10;
+}
+
+.input-icon-right:hover {
+  color: #6b7280;
 }
 </style>

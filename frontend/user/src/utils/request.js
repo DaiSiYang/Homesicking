@@ -37,14 +37,22 @@ request.interceptors.response.use(
       const { status, data } = error.response
       
       switch (status) {
-        case 401:
-          // 只有在明确的认证失败时才跳转登录页
-          if (data?.code === 'TOKEN_EXPIRED' || data?.code === 'INVALID_TOKEN') {
+        case 400:
+          // 处理token相关的400错误
+          if (data?.detail?.includes('令牌') || data?.code === 'token_not_valid') {
             ElMessage.error('登录已过期，请重新登录')
             const userStore = useUserStore()
             userStore.resetState()
             window.location.href = '/login'
+          } else {
+            ElMessage.error(data?.message || '请求参数错误')
           }
+          break
+        case 401:
+          ElMessage.error('登录已过期，请重新登录')
+          const userStore = useUserStore()
+          userStore.resetState()
+          window.location.href = '/login'
           break
         case 403:
           ElMessage.error('没有权限访问')

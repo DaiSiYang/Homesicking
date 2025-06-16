@@ -193,6 +193,10 @@ const submitOrder = () => {
         ...contactForm.value
       }
 
+      // 添加调试信息
+      console.log('提交订单数据:', orderData)
+      console.log('购物车项:', checkoutItems.value)
+
       const result = await orderStore.submitOrder(orderData)
       
       // 创建订单成功，跳转到支付页面
@@ -207,6 +211,7 @@ const submitOrder = () => {
       })
     } catch (error) {
       console.error('提交订单失败:', error)
+      console.error('错误详情:', error.response?.data) // 添加详细错误信息
       ElMessage.error('提交订单失败，请稍后再试')
     } finally {
       submitting.value = false
@@ -214,7 +219,7 @@ const submitOrder = () => {
   })
 }
 
-// 初始化
+// 在 onMounted 中添加验证
 onMounted(async () => {
   if (!userStore.isLoggedIn) {
     router.push('/login?redirect=/checkout')
@@ -223,7 +228,8 @@ onMounted(async () => {
 
   const cartIds = route.query.cart_ids
   if (!cartIds) {
-    loading.value = false
+    ElMessage.error('没有选择要结算的商品')
+    router.push('/cart')
     return
   }
 
@@ -232,9 +238,17 @@ onMounted(async () => {
     
     // 解析购物车ID
     const ids = cartIds.split(',').map(id => parseInt(id))
+    console.log('解析的购物车ID:', ids)
     
     // 根据ID筛选购物车项
     checkoutItems.value = cartStore.cartItems.filter(item => ids.includes(item.id))
+    console.log('筛选后的购物车项:', checkoutItems.value)
+    
+    if (checkoutItems.value.length === 0) {
+      ElMessage.error('选择的商品不存在或已失效')
+      router.push('/cart')
+      return
+    }
     
     // 填充用户信息
     contactForm.value.contact_name = userStore.userInfo.username || ''
@@ -247,4 +261,4 @@ onMounted(async () => {
     loading.value = false
   }
 })
-</script> 
+</script>

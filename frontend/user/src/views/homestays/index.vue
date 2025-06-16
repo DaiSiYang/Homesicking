@@ -59,19 +59,19 @@
       <div v-for="homestay in homestays" :key="homestay.id" class="homestay-card">
         <el-card class="h-full flex flex-col" shadow="hover">
           <div class="homestay-image relative mb-4">
-            <img :src="homestay.coverImage" alt="民宿图片" class="w-full h-48 object-cover rounded">
-            <span v-if="homestay.isFeatured" class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">特色民宿</span>
+            <img :src="cleanImageUrl(homestay.cover_image)" alt="民宿图片" class="w-full h-48 object-cover rounded" @error="handleImageError">
+            <span v-if="homestay.is_featured" class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">特色民宿</span>
           </div>
           <h3 class="text-xl font-bold mb-2">{{ homestay.name }}</h3>
-          <p class="text-gray-500 mb-2 text-sm">{{ homestay.village }} | {{ homestay.propertyType }}</p>
+          <p class="text-gray-500 mb-2 text-sm">{{ homestay.village_name }} | {{ homestay.property_type }}</p>
           <div class="flex items-center mb-2">
-            <el-rate v-model="homestay.rating" disabled text-color="#ff9900" />
+            <el-rate :model-value="parseFloat(homestay.rating)" disabled text-color="#ff9900" />
             <span class="ml-2 text-orange-500 text-sm">{{ homestay.rating }}分</span>
           </div>
           <p class="text-sm text-gray-600 mb-4 flex-grow line-clamp-2">{{ homestay.intro }}</p>
           <div class="flex justify-between items-center">
             <div>
-              <span class="text-red-500 font-bold">¥{{ homestay.lowestPrice }}</span>
+              <span class="text-red-500 font-bold">¥{{ homestay.lowest_price }}</span>
               <span class="text-gray-500 text-xs">起/晚</span>
             </div>
             <router-link :to="`/homestays/${homestay.id}`">
@@ -143,7 +143,11 @@ const fetchHomestays = async () => {
     
     const res = await getHomestayList(params)
     if (res.code === 200) {
-      homestays.value = res.data.results || []
+      // 清理数据中的额外字符
+      homestays.value = (res.data.results || []).map(homestay => ({
+        ...homestay,
+        cover_image: cleanImageUrl(homestay.cover_image)
+      }))
       total.value = res.data.count || 0
     } else {
       ElMessage.error(res.message || '获取民宿数据失败')
@@ -154,6 +158,17 @@ const fetchHomestays = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 清理图片URL的函数
+const cleanImageUrl = (url) => {
+  if (!url) return ''
+  return url.replace(/[`\s]/g, '').trim()
+}
+
+// 图片加载错误处理
+const handleImageError = (event) => {
+  event.target.src = '/images/default-homestay.jpg' // 设置默认图片
 }
 
 // 搜索民宿

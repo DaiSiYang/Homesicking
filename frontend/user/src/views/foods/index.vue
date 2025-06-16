@@ -50,7 +50,7 @@
       <div v-for="food in foods" :key="food.id" class="food-card">
         <el-card class="h-full flex flex-col" shadow="hover">
           <div class="food-image mb-4 relative">
-            <img :src="food.coverImage" alt="美食图片" class="w-full h-48 object-cover rounded">
+            <img :src="food.cover_image || food.coverImage" alt="美食图片" class="w-full h-48 object-cover rounded">
             <div v-if="food.isPopular" class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
               人气美食
             </div>

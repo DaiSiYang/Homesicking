@@ -2,10 +2,6 @@ from rest_framework.response import Response
 from rest_framework import status
 
 class ApiResponse(Response):
-    """
-    自定义API响应格式
-    统一返回格式: {code: xxx, message: "xxx", data: {...}}
-    """
     def __init__(self, data=None, code=200, message="操作成功", status_code=None, **kwargs):
         response_data = {
             "code": code,
